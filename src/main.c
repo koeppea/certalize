@@ -24,23 +24,19 @@ int parse_options(int argc, char *argv[])
    return E_SUCCESS;
 }
 
-void cleanup(void)
-{
-}
-
 int main(int argc, char *argv[])
 {
    int ret = 0;
 
+   /* parse options */
    if ((ret = parse_options(argc, argv))) {
       return -ret;
    }
 
-   ui_start();
+   /* start UI */
+   ret = ui_start(argc, argv);
 
-   cleanup();
-
-   return 0;
+   return ret;
 }
 
 

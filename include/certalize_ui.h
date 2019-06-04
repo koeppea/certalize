@@ -32,7 +32,7 @@ typedef struct gtk_accel_map {
 } ui_accel_map_t;
 
 /* prototypes */
-extern void ui_start(void);
+extern int ui_start(int argc, char *argv[]);
 
 #endif   /* CERTALIZE_UI_H */
 

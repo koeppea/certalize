@@ -11,6 +11,7 @@ set(cmake_generated ${CMAKE_BINARY_DIR}/CMakeCache.txt
                     ${CMAKE_BINARY_DIR}/man/
                     ${CMAKE_BINARY_DIR}/share/
                     ${CMAKE_BINARY_DIR}/src/
+                    ${CMAKE_BINARY_DIR}/ui/
 )
 
 foreach(file ${cmake_generated})
