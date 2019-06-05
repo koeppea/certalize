@@ -3,5 +3,19 @@
   <object class="GtkWindow" id="main-window">
     <property name="default-width">600</property>
     <property name="default-height">400</property>
+
+    <child type="titlebar">
+      <object class="GtkHeaderBar" id="header-bar">
+        <property name="title">Certalize</property>
+        <property name="subtitle">A X.509 Certificate Analyzer</property>
+        <property name="show_close_button">true</property>
+        <child>
+        </child>
+      </object>
+    </child>
+
+    <child>
+    </child>
+
   </object>
 </interface>

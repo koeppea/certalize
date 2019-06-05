@@ -56,15 +56,26 @@ int ui_start(int argc, char *argv[])
  */
 static void ui_activate(GApplication *app, gpointer data)
 {
-   GtkWidget *window = GTK_WINDOW(data);
+   GObject *window;
+   GError *err = NULL;
    GtkBuilder *builder;
+   gchar *filename = INSTALL_UIDIR "/main.ui";
 
-   builder = gtk_builder_new_from_file(INSTALL_UIDIR "/main.ui");
+   (void) data;
 
+   /* Load UI from XML file */
+   builder = gtk_builder_new();
+   if (!gtk_builder_add_from_file(builder, filename, &err)) {
+      g_print("GtkBuilder could not load from file '%s': %s\n",
+            filename, err->message);
+      g_error_free(err);
+      return;
+   }
+   
+   /* show application window */
    window = gtk_builder_get_object(builder, "main-window");
-
-   gtk_widget_show_all(window);
-
+   gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(window));
+   gtk_widget_show_all(GTK_WIDGET(window));
 }
 
 /*
