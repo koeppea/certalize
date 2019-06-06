@@ -10,7 +10,44 @@
         <property name="title">Certalize</property>
         <property name="subtitle">A X.509 Certificate Analyzer</property>
         <property name="show_close_button">true</property>
+        <!-- Options Button -->
         <child>
+          <object class="GtkMenuButton" id="menu-button">
+            <property name="image">menu_image</property>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+          </packing>
+        </child>
+        <!-- Open Button -->
+        <child>
+          <object class="GtkMenuButton" id="open-button">
+            <style>
+              <class name="text-button" />
+              <class name="image-button" />
+            </style>
+            <child>
+              <object class="GtkBox" id="open-button-box">
+                <property name="can_focus">false</property>
+                <property name="has_focus">false</property>
+                <property name="is_focus">false</property>
+                <child>
+                  <object class="GtkLabel" id="open-button-label">
+                    <property name="label" translatable="yes">_Open</property>
+                    <property name="use_underline">true</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkImage" id="open-button-arrow">
+                    <property name="icon_name">pan-down-symbolic</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="pack_type">start</property>
+          </packing>
         </child>
       </object>
     </child>
@@ -19,5 +56,8 @@
     <child>
     </child>
 
+  </object>
+  <object class="GtkImage" id="menu_image">
+    <property name="icon_name">open-menu-symbolic</property>
   </object>
 </interface>
