@@ -4,6 +4,7 @@
     <property name="default-width">600</property>
     <property name="default-height">400</property>
 
+    <!-- HeaderBar -->
     <child type="titlebar">
       <object class="GtkHeaderBar" id="header-bar">
         <property name="title">Certalize</property>
@@ -14,6 +15,7 @@
       </object>
     </child>
 
+    <!-- main content -->
     <child>
     </child>
 

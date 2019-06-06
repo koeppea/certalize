@@ -1,5 +1,6 @@
 set(UI_FILES
-  main.ui
+  widgets.ui
+  menus.ui
 )
 
 foreach(f IN LISTS UI_FILES)

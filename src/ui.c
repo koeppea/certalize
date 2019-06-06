@@ -58,23 +58,51 @@ static void ui_activate(GApplication *app, gpointer data)
 {
    GObject *window;
    GError *err = NULL;
-   GtkBuilder *builder;
-   gchar *filename = INSTALL_UIDIR "/main.ui";
+   GtkBuilder *widgets, *menus;
+   gchar *widgets_filename = INSTALL_UIDIR "/widgets.ui";
+   gchar *menus_filename = INSTALL_UIDIR "/menus.ui";
+   gint i;
 
    (void) data;
 
    /* Load UI from XML file */
-   builder = gtk_builder_new();
-   if (!gtk_builder_add_from_file(builder, filename, &err)) {
+   widgets = gtk_builder_new();
+   if (!gtk_builder_add_from_file(widgets, widgets_filename, &err)) {
       g_print("GtkBuilder could not load from file '%s': %s\n",
-            filename, err->message);
+            widgets_filename, err->message);
       g_error_free(err);
       return;
    }
+
+   menus = gtk_builder_new();
+   if (!gtk_builder_add_from_file(menus, menus_filename, &err)) {
+      g_print("GtkBuilder could not load from file '%s': %s\n",
+            menus_filename, err->message);
+      g_error_free(err);
+      return;
+   }
+
+
+   /* define accelerators */
+   static ui_accel_map_t accels[] = {
+      {"app.quit", {"<Primary>q", NULL}}
+   };
+
+   /* map accelerators to actions */
+   for (i = 0; i < G_N_ELEMENTS(accels); i++)
+      gtk_application_set_accels_for_action(GTK_APPLICATION(app),
+            accels[i].action, accels[i].accel);
+   
    
    /* show application window */
-   window = gtk_builder_get_object(builder, "main-window");
+   window = gtk_builder_get_object(widgets, "main-window");
    gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(window));
+
+   /* set app menu */
+   gtk_application_set_app_menu(GTK_APPLICATION(app),
+         G_MENU_MODEL(gtk_builder_get_object(menus, "app-menu")));
+
+   /* show all widgets */
    gtk_widget_show_all(GTK_WIDGET(window));
 }
 
