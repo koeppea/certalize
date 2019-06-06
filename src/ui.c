@@ -23,8 +23,10 @@
 /* globals    */
 
 /* prototypes */
-static void ui_activate(GApplication* app, gpointer data);
-static void ui_shutdown(GApplication* app, gpointer data);
+static void cb_activate(GApplication *app, gpointer data);
+static void cb_shutdown(GApplication *app, gpointer data);
+static void ui_shutdown(GSimpleAction *action, GVariant *value, gpointer data);
+static void ui_new(GSimpleAction *action, GVariant *value, gpointer data);
 
 
 /*************/
@@ -35,14 +37,13 @@ static void ui_shutdown(GApplication* app, gpointer data);
 int ui_start(int argc, char *argv[])
 {
    GtkApplication *app = NULL;
-   GtkWidget *window = NULL;
    int status;
 
    app = gtk_application_new("org.gnome.Certalize",
          G_APPLICATION_FLAGS_NONE);
 
-   g_signal_connect(app, "activate", G_CALLBACK(ui_activate), window);
-   g_signal_connect(app, "shutdown", G_CALLBACK(ui_shutdown), window);
+   g_signal_connect(app, "activate", G_CALLBACK(cb_activate), NULL);
+   g_signal_connect(app, "shutdown", G_CALLBACK(cb_shutdown), NULL);
 
    status = g_application_run(G_APPLICATION(app), argc, argv);
 
@@ -54,14 +55,14 @@ int ui_start(int argc, char *argv[])
 /*
  * build widgets from resource file
  */
-static void ui_activate(GApplication *app, gpointer data)
+static void cb_activate(GApplication *app, gpointer data _U_)
 {
    GObject *window;
    GError *err = NULL;
    GtkBuilder *widgets, *menus;
    gchar *widgets_filename = INSTALL_UIDIR "/widgets.ui";
    gchar *menus_filename = INSTALL_UIDIR "/menus.ui";
-   gint i;
+   guint i;
 
    (void) data;
 
@@ -85,8 +86,19 @@ static void ui_activate(GApplication *app, gpointer data)
 
    /* define accelerators */
    static ui_accel_map_t accels[] = {
+      {"app.new", {"<Primary>n", NULL}},
       {"app.quit", {"<Primary>q", NULL}}
    };
+
+   /* define actions */
+   static GActionEntry action_entries[] = {
+      {"new", ui_new, NULL, NULL, NULL, {}},
+      {"quit", ui_shutdown, NULL, NULL, NULL, {}}
+   };
+
+   /* add action to the application */
+   g_action_map_add_action_entries(G_ACTION_MAP(app), action_entries,
+         G_N_ELEMENTS(action_entries), app);
 
    /* map accelerators to actions */
    for (i = 0; i < G_N_ELEMENTS(accels); i++)
@@ -102,6 +114,11 @@ static void ui_activate(GApplication *app, gpointer data)
    gtk_application_set_app_menu(GTK_APPLICATION(app),
          G_MENU_MODEL(gtk_builder_get_object(menus, "app-menu")));
 
+   /* set options menu */
+   gtk_menu_button_set_menu_model(
+         GTK_MENU_BUTTON(gtk_builder_get_object(widgets, "menu-button")),
+         G_MENU_MODEL(gtk_builder_get_object(menus, "options-menu")));
+
    /* show all widgets */
    gtk_widget_show_all(GTK_WIDGET(window));
 }
@@ -109,8 +126,28 @@ static void ui_activate(GApplication *app, gpointer data)
 /*
  * cleanup when application is shut down
  */
-static void ui_shutdown(GApplication *app, gpointer data)
+static void ui_shutdown(GSimpleAction *action _U_, GVariant *value _U_, gpointer app)
 {
+
+   g_print("ui_shutdown\n");
+   g_application_quit(app);
+}
+
+/*
+ * callback when application shuts doen
+ *   - do all cleanup work here
+ */
+static void cb_shutdown(GApplication *app, gpointer data _U_)
+{
+   g_print("cb_shutdown\n");
+}
+
+/*
+ * New instance
+ */
+static void ui_new(GSimpleAction *action _U_, GVariant *value _U_, gpointer app _U_)
+{
+   g_print("ui_new\n");
 }
 
 

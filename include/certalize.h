@@ -27,6 +27,7 @@
 #include <strings.h>
 #include <errno.h>
 
+#define _U_ __attribute__((unused))
 
 enum {
    E_SUCCESS    = 0,

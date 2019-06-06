@@ -3,6 +3,11 @@
   <menu id="app-menu">
     <section>
       <item>
+        <attribute name="label" translatable="yes">_New Window</attribute>
+        <attribute name="action">app.new</attribute>
+        <attribute name="icon">document-new</attribute>
+      </item>
+      <item>
         <attribute name="label" translatable="yes">_Open Certificate</attribute>
         <attribute name="action">app.open</attribute>
         <attribute name="icon">document-open</attribute>
@@ -13,6 +18,14 @@
         <attribute name="label" translatable="yes">_Quit</attribute>
         <attribute name="action">app.quit</attribute>
         <attribute name="icon">application-exit</attribute>
+      </item>
+    </section>
+  </menu>
+  <menu id="options-menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Test</attribute>
+        <attribute name="action">app.test</attribute>
       </item>
     </section>
   </menu>

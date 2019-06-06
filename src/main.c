@@ -19,7 +19,7 @@
 #include <certalize.h>
 #include <certalize_ui.h>
 
-int parse_options(int argc, char *argv[])
+int parse_options(int argc _U_, char *argv[] _U_)
 {
    return E_SUCCESS;
 }
