@@ -21,12 +21,15 @@
 #include <certalize_ui.h>
 
 /* globals    */
+GObject *window;
 
 /* prototypes */
 static void cb_activate(GApplication *app, gpointer data);
 static void cb_shutdown(GApplication *app, gpointer data);
 static void ui_shutdown(GSimpleAction *action, GVariant *value, gpointer data);
 static void ui_new(GSimpleAction *action, GVariant *value, gpointer data);
+static void ui_open(GSimpleAction *action, GVariant *value, gpointer data);
+static void ui_prefs(GSimpleAction *action, GVariant *value, gpointer data);
 
 
 /*************/
@@ -39,8 +42,7 @@ int ui_start(int argc, char *argv[])
    GtkApplication *app = NULL;
    int status;
 
-   app = gtk_application_new("org.gnome.Certalize",
-         G_APPLICATION_FLAGS_NONE);
+   app = gtk_application_new("org.gnome.Certalize", G_APPLICATION_FLAGS_NONE);
 
    g_signal_connect(app, "activate", G_CALLBACK(cb_activate), NULL);
    g_signal_connect(app, "shutdown", G_CALLBACK(cb_shutdown), NULL);
@@ -57,14 +59,12 @@ int ui_start(int argc, char *argv[])
  */
 static void cb_activate(GApplication *app, gpointer data _U_)
 {
-   GObject *window;
+   GObject *menu;
    GError *err = NULL;
    GtkBuilder *widgets, *menus;
    gchar *widgets_filename = INSTALL_UIDIR "/widgets.ui";
    gchar *menus_filename = INSTALL_UIDIR "/menus.ui";
    guint i;
-
-   (void) data;
 
    /* Load UI from XML file */
    widgets = gtk_builder_new();
@@ -83,16 +83,29 @@ static void cb_activate(GApplication *app, gpointer data _U_)
       return;
    }
 
+   /* show application window */
+   window = gtk_builder_get_object(widgets, "main-window");
+   gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(window));
+
+   /* set app menu */
+   menu = gtk_builder_get_object(menus, "app-menu");
+   gtk_application_set_app_menu(GTK_APPLICATION(app), G_MENU_MODEL(menu));
+
+   g_object_unref(widgets);
+   g_object_unref(menus);
 
    /* define accelerators */
    static ui_accel_map_t accels[] = {
       {"app.new", {"<Primary>n", NULL}},
+      {"app.open", {"<Primary>o", NULL}},
       {"app.quit", {"<Primary>q", NULL}}
    };
 
    /* define actions */
    static GActionEntry action_entries[] = {
       {"new", ui_new, NULL, NULL, NULL, {}},
+      {"open", ui_open, NULL, NULL, NULL, {}},
+      {"prefs", ui_prefs, NULL, NULL, NULL, {}},
       {"quit", ui_shutdown, NULL, NULL, NULL, {}}
    };
 
@@ -105,39 +118,24 @@ static void cb_activate(GApplication *app, gpointer data _U_)
       gtk_application_set_accels_for_action(GTK_APPLICATION(app),
             accels[i].action, accels[i].accel);
    
-   
-   /* show application window */
-   window = gtk_builder_get_object(widgets, "main-window");
-   gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(window));
-
-   /* set app menu */
-   gtk_application_set_app_menu(GTK_APPLICATION(app),
-         G_MENU_MODEL(gtk_builder_get_object(menus, "app-menu")));
-
-   /* set options menu */
-   gtk_menu_button_set_menu_model(
-         GTK_MENU_BUTTON(gtk_builder_get_object(widgets, "menu-button")),
-         G_MENU_MODEL(gtk_builder_get_object(menus, "options-menu")));
-
    /* show all widgets */
    gtk_widget_show_all(GTK_WIDGET(window));
 }
 
 /*
- * cleanup when application is shut down
+ * request to shutdown application
  */
 static void ui_shutdown(GSimpleAction *action _U_, GVariant *value _U_, gpointer app)
 {
-
    g_print("ui_shutdown\n");
    g_application_quit(app);
 }
 
 /*
- * callback when application shuts doen
+ * callback when application shuts down
  *   - do all cleanup work here
  */
-static void cb_shutdown(GApplication *app, gpointer data _U_)
+static void cb_shutdown(GApplication *app _U_, gpointer data _U_)
 {
    g_print("cb_shutdown\n");
 }
@@ -145,9 +143,51 @@ static void cb_shutdown(GApplication *app, gpointer data _U_)
 /*
  * New instance
  */
-static void ui_new(GSimpleAction *action _U_, GVariant *value _U_, gpointer app _U_)
+static void ui_new(GSimpleAction *action _U_, GVariant *value _U_, gpointer data _U_)
 {
    g_print("ui_new\n");
+}
+
+/*
+ * Open file dialog
+ */
+static void ui_open(GSimpleAction *action _U_, GVariant *value _U_, gpointer data _U_)
+{
+   GtkWidget *dialog, *chooser, *content;
+   gchar *filename;
+   gint response = 0;
+
+   g_print("ui_open\n");
+
+   dialog = gtk_dialog_new_with_buttons("Select a Certificate file",
+         GTK_WINDOW(window),
+         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
+         "_Cancel", GTK_RESPONSE_CANCEL,
+         "_OK",     GTK_RESPONSE_OK,
+         NULL);
+   gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
+
+   content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+   chooser = gtk_file_chooser_widget_new(GTK_FILE_CHOOSER_ACTION_OPEN);
+   gtk_container_add(GTK_CONTAINER(content), chooser);
+   gtk_widget_show(chooser);
+
+   response = gtk_dialog_run(GTK_DIALOG(dialog));
+
+   if (response == GTK_RESPONSE_OK) {
+      gtk_widget_destroy(dialog);
+   }
+   else {
+      gtk_widget_destroy(dialog);
+   }
+}
+
+/*
+ * Preferences dialog
+ */
+static void ui_prefs(GSimpleAction *action _U_, GVariant *value _U_, gpointer data _U_)
+{
+   g_print("ui_prefs\n");
 }
 
 
