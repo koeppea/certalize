@@ -1,4 +1,4 @@
-/* certalize_ui.h
+/* buf.c - certificate buffer handling
  *
  * Copyright (C) 2019 Alexander Koeppe
  *
@@ -16,24 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CERTALIZE_UI_H
-#define CERTALIZE_UI_H
 
-#include <gtk/gtk.h>
+#include <certalize.h>
+#include <certalize_buf.h>
 
-typedef struct gtk_accel_map {
-   /* detailed action name */
-   gchar *action;
-   /*
-    * NULL terminated accelerator string-array
-    */
-   const char * const accel[2];
-} ui_accel_map_t;
+/* globals    */
 
 /* prototypes */
-extern int ui_start(int argc, char *argv[]);
 
-#endif   /* CERTALIZE_UI_H */
+
+
+/*************/
+
+cbuf_t cbuf_load_file(const gchar *filename)
+{
+   cbuf_t *cbuf;
+
+   g_print("cbuf_load_file('%s')\n", filename);
+
+   return E_SUCCESS;
+}
 
 /* EOF */
 

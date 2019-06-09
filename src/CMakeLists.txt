@@ -1,6 +1,7 @@
 set(SOURCE_FILES
   main.c
   ui.c
+  buf.c
 )
 
 add_executable(certalize ${SOURCE_FILES})

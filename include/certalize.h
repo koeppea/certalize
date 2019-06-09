@@ -26,6 +26,7 @@
 #include <string.h>
 #include <strings.h>
 #include <errno.h>
+#include <glib.h>
 
 #define _U_ __attribute__((unused))
 

@@ -1,4 +1,4 @@
-/* certalize_ui.h
+/* certalize_buf.h
  *
  * Copyright (C) 2019 Alexander Koeppe
  *
@@ -16,24 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CERTALIZE_UI_H
-#define CERTALIZE_UI_H
+#ifndef CERTALIZE_BUF_H
+#define CERTALIZE_BUF_H
 
-#include <gtk/gtk.h>
+#include <certalize.h>
+typedef struct cbuf {
+   guchar *buffer;
+} cbuf_t;
 
-typedef struct gtk_accel_map {
-   /* detailed action name */
-   gchar *action;
-   /*
-    * NULL terminated accelerator string-array
-    */
-   const char * const accel[2];
-} ui_accel_map_t;
+extern gint cbuf_load_file(const gchar *filename);
 
-/* prototypes */
-extern int ui_start(int argc, char *argv[]);
 
-#endif   /* CERTALIZE_UI_H */
+#endif   /* CERTALIZE_BUF_H */
 
 /* EOF */
 

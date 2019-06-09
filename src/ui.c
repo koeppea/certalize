@@ -19,6 +19,7 @@
 
 #include <certalize.h>
 #include <certalize_ui.h>
+#include <certalize_buf.h>
 
 /* globals    */
 GObject *window;
@@ -156,12 +157,13 @@ static void ui_open(GSimpleAction *action _U_, GVariant *value _U_, gpointer dat
    GtkWidget *dialog, *chooser, *content;
    gchar *filename;
    gint response = 0;
+   cbuf_t *cbuf;
 
    g_print("ui_open\n");
 
    dialog = gtk_dialog_new_with_buttons("Select a Certificate file",
          GTK_WINDOW(window),
-         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
+         GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_USE_HEADER_BAR,
          "_Cancel", GTK_RESPONSE_CANCEL,
          "_OK",     GTK_RESPONSE_OK,
          NULL);
@@ -175,7 +177,11 @@ static void ui_open(GSimpleAction *action _U_, GVariant *value _U_, gpointer dat
    response = gtk_dialog_run(GTK_DIALOG(dialog));
 
    if (response == GTK_RESPONSE_OK) {
+      gtk_widget_hide(dialog);
+      filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser));
       gtk_widget_destroy(dialog);
+      cbuf = cbuf_load_file(filename);
+      g_free(filename);
    }
    else {
       gtk_widget_destroy(dialog);

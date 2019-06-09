@@ -13,6 +13,8 @@
         <!-- Open Button -->
         <child>
           <object class="GtkMenuButton" id="open-button">
+            <!-- TODO add recent menu instead of directly show open dialog -->
+            <property name="action_name">app.open</property>
             <style>
               <class name="text-button" />
               <class name="image-button" />
@@ -62,8 +64,18 @@
           <object class="GtkBox">
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkTreeView" id="treeview">
+              <object class="GtkScrolledWindow" id="details-scroll">
+                <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                <child>
+                  <object class="GtkTreeView" id="details-view">
+                  </object>
+                </child>
               </object>
+              <packing>
+                <property name="expand">true</property>
+                <property name="fill">true</property>
+              </packing>
             </child>
           </object>
         </child>
@@ -71,9 +83,19 @@
           <object class="GtkBox">
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkTextView" id="textview">
-                <property name="editable">false</property>
+              <object class="GtkScrolledWindow" id="bytes-scroll">
+                <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                <child>
+                  <object class="GtkTextView" id="bytes-view">
+                    <property name="editable">false</property>
+                  </object>
+                </child>
               </object>
+              <packing>
+                <property name="expand">true</property>
+                <property name="fill">true</property>
+              </packing>
             </child>
           </object>
         </child>
