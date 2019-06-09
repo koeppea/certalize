@@ -25,7 +25,6 @@
 GObject *window = NULL;
 GObject *details = NULL;
 GObject *bytes = NULL;
-cbuf_t *cbuf = NULL;
 
 /* prototypes */
 static void cb_activate(GApplication *app, gpointer data);
@@ -149,11 +148,6 @@ static void ui_shutdown(GSimpleAction *action _U_, GVariant *value _U_, gpointer
 static void cb_shutdown(GApplication *app _U_, gpointer data _U_)
 {
    g_print("cb_shutdown\n");
-
-   if (cbuf != NULL) {
-      g_free(cbuf->buffer);
-      g_free(cbuf);
-   }
 }
 
 /*
@@ -172,6 +166,7 @@ static void ui_open(GSimpleAction *action _U_, GVariant *value _U_, gpointer dat
    GtkWidget *dialog, *chooser, *content;
    gchar *filename;
    gint response = 0;
+   cbuf_t *cbuf;
 
    g_print("ui_open\n");
 
@@ -227,11 +222,58 @@ static void ui_analyze_certificate(cbuf_t *cbuf)
 static void ui_dump_bytes(cbuf_t *cbuf)
 {
    GtkTextView *textview;
-   gchar buf[16];
-   guint offset;
+   GtkTextBuffer *buffer;
+   gchar buf[16], *ptr;
+   guint offset = 0, remain, i;
    g_print("ui_dump_bytes\n");
 
    textview = GTK_TEXT_VIEW(bytes);
+
+
+   while (cbuf_length_remaining(cbuf, offset) < 16) {
+
+      ptr = buf;
+      cbuf_get_bytes(cbuf, &ptr, offset, 16);
+
+      g_print("%08x  ", offset);
+
+      for (i = 0; i < 8; i++)
+         g_print("%02x ", buf[i]);
+      
+      g_print(" ");
+
+      for (i = 8; i < 16; i++)
+         g_print("%02x ", buf[i]);
+
+      g_print("|");
+      for (i = 0; i < 16; i++)
+         g_print("%c", g_ascii_isprint(buf[i]) ? buf[i] : '.');
+      g_print("|\n");
+
+      offset += 16;
+   }
+
+   remain = cbuf_length_remaining(cbuf, offset);
+
+   if (remain > 0) {
+      g_print("%08x  ", offset);
+
+      for (i = 0; i < (remain > 8 ? 8 : remain); i++)
+         g_print("%02x ", buf[i]);
+      
+      if (remain > 8) {
+         g_print(" ");
+
+         for (i = 8; i < remain; i++)
+            g_print("%02x ", buf[i]);
+      }
+
+      g_print(" ");
+      g_print("|");
+      for (i = 0; i < remain; i++)
+         g_print("%c", g_ascii_isprint(buf[i]) ? buf[i] : '.');
+      g_print("|\n");
+   }
 
 
 }

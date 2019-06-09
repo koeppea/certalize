@@ -56,6 +56,70 @@ cbuf_t* cbuf_load_file(const gchar *filename)
    return cbuf;
 }
 
+/*
+ * Returns 16-bits from buffer in host-byte order
+ */
+guint16 cbuf_get_ntohs(cbuf_t *cbuf, guint offset)
+{
+   guint16 result;
+
+   if (offset + 2 > cbuf->length) {
+      g_print("cbuf_get_ntohs: not enough buffer available\n");
+      return 0;
+   }
+
+   result = (guint16)*(cbuf->buffer + offset+0) << 8 |
+            (guint16)*(cbuf->buffer + offset+1);
+   
+   return result;
+}
+
+/*
+ * Returns 32-bits from buffer in host-byte order
+ */
+guint32 cbuf_get_ntohl(cbuf_t *cbuf, guint offset)
+{
+   guint32 result;
+
+   if (offset + 4 > cbuf->length) {
+      g_print("cbuf_get_ntohl: not enough buffer available\n");
+      return 0;
+   }
+
+   result = (guint32)*(cbuf->buffer + offset+0) << 24 |
+            (guint32)*(cbuf->buffer + offset+1) << 16 |
+            (guint32)*(cbuf->buffer + offset+2) <<  8 |
+            (guint32)*(cbuf->buffer + offset+3);
+
+   return result;
+}
+
+/*
+ * Copies number of bytes into a externally provided buffer
+ * Buffer have to provide enough memory to hold the data
+ */
+gchar* cbuf_get_bytes(cbuf_t *cbuf, gchar **buffer, guint offset, gsize length)
+{
+
+   if(offset + length > cbuf->length) {
+      g_print("cbuf_get_bytes: not enough buffer available\n");
+      return NULL;
+   }
+
+   memcpy(*buffer, cbuf->buffer + offset, length);
+
+   return *buffer;
+}
+
+/*
+ * Returns the remaining length relative from offset
+ */
+gsize cbuf_length_remaining(cbuf_t *cbuf, guint offset)
+{
+   return cbuf->length - offset;
+}
+
+
 /* EOF */
 
 // vim:ts=3:expandtab

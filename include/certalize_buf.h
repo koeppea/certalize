@@ -28,6 +28,10 @@ typedef struct cbuf {
 } cbuf_t;
 
 extern cbuf_t* cbuf_load_file(const gchar *filename);
+extern guint16 cbuf_get_ntohs(cbuf_t *cbuf, guint offset);
+extern guint32 cbuf_get_ntohl(cbuf_t *cbuf, guint offset);
+extern gchar*  cbuf_get_bytes(cbuf_t *cbuf, gchar **buffer, guint offset, gsize length);
+extern gsize   cbuf_length_remaining(cbuf_t *cbuf, guint offset);
 
 
 #endif   /* CERTALIZE_BUF_H */
