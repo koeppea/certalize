@@ -28,13 +28,32 @@
 
 /*************/
 
-cbuf_t cbuf_load_file(const gchar *filename)
+cbuf_t* cbuf_load_file(const gchar *filename)
 {
+   gchar *content;
+   gsize readlen;
+   GError *error;
    cbuf_t *cbuf;
 
    g_print("cbuf_load_file('%s')\n", filename);
+   cbuf = g_malloc0(sizeof(cbuf_t));
 
-   return E_SUCCESS;
+   if (cbuf == NULL) {
+      g_print("memory allocation failed: %s\n", strerror(errno));
+      return NULL;
+   }
+
+   if (!g_file_get_contents(filename, &content, &readlen, &error)) {
+      g_print("reading file '%s' failed: '%s'\n", filename, error->message);
+      g_free(cbuf);
+      return NULL;
+   }
+
+   cbuf->buffer = content;
+   cbuf->length = readlen;
+   cbuf->offset = 0;
+
+   return cbuf;
 }
 
 /* EOF */

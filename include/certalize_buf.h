@@ -20,11 +20,14 @@
 #define CERTALIZE_BUF_H
 
 #include <certalize.h>
+
 typedef struct cbuf {
    guchar *buffer;
+   gsize length;
+   guint offset;
 } cbuf_t;
 
-extern gint cbuf_load_file(const gchar *filename);
+extern cbuf_t* cbuf_load_file(const gchar *filename);
 
 
 #endif   /* CERTALIZE_BUF_H */

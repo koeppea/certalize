@@ -22,7 +22,10 @@
 #include <certalize_buf.h>
 
 /* globals    */
-GObject *window;
+GObject *window = NULL;
+GObject *details = NULL;
+GObject *bytes = NULL;
+cbuf_t *cbuf = NULL;
 
 /* prototypes */
 static void cb_activate(GApplication *app, gpointer data);
@@ -31,6 +34,8 @@ static void ui_shutdown(GSimpleAction *action, GVariant *value, gpointer data);
 static void ui_new(GSimpleAction *action, GVariant *value, gpointer data);
 static void ui_open(GSimpleAction *action, GVariant *value, gpointer data);
 static void ui_prefs(GSimpleAction *action, GVariant *value, gpointer data);
+static void ui_analyze_certificate(cbuf_t *cbuf);
+static void ui_dump_bytes(cbuf_t *cbuf);
 
 
 /*************/
@@ -92,8 +97,9 @@ static void cb_activate(GApplication *app, gpointer data _U_)
    menu = gtk_builder_get_object(menus, "app-menu");
    gtk_application_set_app_menu(GTK_APPLICATION(app), G_MENU_MODEL(menu));
 
-   g_object_unref(widgets);
-   g_object_unref(menus);
+   /* get main widgets to be used later */
+   details = gtk_builder_get_object(widgets, "details-view");
+   bytes = gtk_builder_get_object(widgets, "bytes-view");
 
    /* define accelerators */
    static ui_accel_map_t accels[] = {
@@ -121,6 +127,10 @@ static void cb_activate(GApplication *app, gpointer data _U_)
    
    /* show all widgets */
    gtk_widget_show_all(GTK_WIDGET(window));
+
+   g_object_unref(widgets);
+   g_object_unref(menus);
+
 }
 
 /*
@@ -139,6 +149,11 @@ static void ui_shutdown(GSimpleAction *action _U_, GVariant *value _U_, gpointer
 static void cb_shutdown(GApplication *app _U_, gpointer data _U_)
 {
    g_print("cb_shutdown\n");
+
+   if (cbuf != NULL) {
+      g_free(cbuf->buffer);
+      g_free(cbuf);
+   }
 }
 
 /*
@@ -157,7 +172,6 @@ static void ui_open(GSimpleAction *action _U_, GVariant *value _U_, gpointer dat
    GtkWidget *dialog, *chooser, *content;
    gchar *filename;
    gint response = 0;
-   cbuf_t *cbuf;
 
    g_print("ui_open\n");
 
@@ -182,6 +196,7 @@ static void ui_open(GSimpleAction *action _U_, GVariant *value _U_, gpointer dat
       gtk_widget_destroy(dialog);
       cbuf = cbuf_load_file(filename);
       g_free(filename);
+      ui_analyze_certificate(cbuf);
    }
    else {
       gtk_widget_destroy(dialog);
@@ -196,7 +211,30 @@ static void ui_prefs(GSimpleAction *action _U_, GVariant *value _U_, gpointer da
    g_print("ui_prefs\n");
 }
 
+/*
+ * This is the main routing to dissect the certificate
+ */
+static void ui_analyze_certificate(cbuf_t *cbuf)
+{
+   g_print("ui_analyze_certificate\n");
 
+   ui_dump_bytes(cbuf);
+}
+
+/*
+ * printing bytes in the byte text view pane
+ */
+static void ui_dump_bytes(cbuf_t *cbuf)
+{
+   GtkTextView *textview;
+   gchar buf[16];
+   guint offset;
+   g_print("ui_dump_bytes\n");
+
+   textview = GTK_TEXT_VIEW(bytes);
+
+
+}
 /* EOF */
 
 // vim:ts=3:expandtab
