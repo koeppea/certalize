@@ -24,7 +24,9 @@
 /* globals    */
 GObject *window = NULL;
 GObject *details = NULL;
+GObject *offset = NULL;
 GObject *bytes = NULL;
+GObject *ascii = NULL;
 
 /* prototypes */
 static void cb_activate(GApplication *app, gpointer data);
@@ -98,7 +100,9 @@ static void cb_activate(GApplication *app, gpointer data _U_)
 
    /* get main widgets to be used later */
    details = gtk_builder_get_object(widgets, "details-view");
+   offset = gtk_builder_get_object(widgets, "offset-view");
    bytes = gtk_builder_get_object(widgets, "bytes-view");
+   ascii = gtk_builder_get_object(widgets, "ascii-view");
 
    /* define accelerators */
    static ui_accel_map_t accels[] = {
