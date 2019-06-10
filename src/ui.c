@@ -223,16 +223,16 @@ static void ui_dump_bytes(cbuf_t *cbuf)
 {
    GtkTextView *textview;
    GtkTextBuffer *buffer;
-   gchar buf[16], *ptr;
+   guchar buf[16], *ptr;
    guint offset = 0, remain, i;
    g_print("ui_dump_bytes\n");
 
    textview = GTK_TEXT_VIEW(bytes);
 
+   ptr = buf;
 
-   while (cbuf_length_remaining(cbuf, offset) < 16) {
+   while (cbuf_length_remaining(cbuf, offset) > 16) {
 
-      ptr = buf;
       cbuf_get_bytes(cbuf, &ptr, offset, 16);
 
       g_print("%08x  ", offset);
@@ -256,6 +256,8 @@ static void ui_dump_bytes(cbuf_t *cbuf)
    remain = cbuf_length_remaining(cbuf, offset);
 
    if (remain > 0) {
+      cbuf_get_bytes(cbuf, &ptr, offset, remain);
+
       g_print("%08x  ", offset);
 
       for (i = 0; i < (remain > 8 ? 8 : remain); i++)
@@ -268,7 +270,9 @@ static void ui_dump_bytes(cbuf_t *cbuf)
             g_print("%02x ", buf[i]);
       }
 
-      g_print(" ");
+      for (i = 0; i < (16 - remain); i++)
+         g_print("   ");
+      
       g_print("|");
       for (i = 0; i < remain; i++)
          g_print("%c", g_ascii_isprint(buf[i]) ? buf[i] : '.');

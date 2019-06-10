@@ -98,7 +98,7 @@ guint32 cbuf_get_ntohl(cbuf_t *cbuf, guint offset)
  * Copies number of bytes into a externally provided buffer
  * Buffer have to provide enough memory to hold the data
  */
-gchar* cbuf_get_bytes(cbuf_t *cbuf, gchar **buffer, guint offset, gsize length)
+gchar* cbuf_get_bytes(cbuf_t *cbuf, guchar **buffer, guint offset, gsize length)
 {
 
    if(offset + length > cbuf->length) {
