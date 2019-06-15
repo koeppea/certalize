@@ -93,9 +93,21 @@
                       <object class="GtkTextView" id="offset-view">
                         <property name="editable">false</property>
                       </object>
+                      <packing>
+                        <property name="expand">true</property>
+                        <property name="fill">true</property>
+                      </packing>
+                    </child>
+                    <child>
                       <object class="GtkTextView" id="bytes-view">
                         <property name="editable">false</property>
                       </object>
+                      <packing>
+                        <property name="expand">true</property>
+                        <property name="fill">true</property>
+                      </packing>
+                    </child>
+                    <child>
                       <object class="GtkTextView" id="ascii-view">
                         <property name="editable">false</property>
                       </object>
