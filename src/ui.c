@@ -108,6 +108,7 @@ static void cb_activate(GApplication *app, gpointer data _U_)
    bytesview = gtk_builder_get_object(widgets, "bytes-view");
    asciiview = gtk_builder_get_object(widgets, "ascii-view");
 
+
    /* define accelerators */
    static ui_accel_map_t accels[] = {
       {"app.new", {"<Primary>n", NULL}},
@@ -235,6 +236,9 @@ static void ui_dump_bytes(cbuf_t *cbuf)
 {
    GtkTextBuffer *offsetbuf, *bytesbuf, *asciibuf;
    GtkTextIter offsetiter, bytesiter, asciiiter;
+   GtkTextIter startiter, enditer;
+   GtkCssProvider *provider;
+   GtkStyleContext *offsetcontext, *bytescontext, *asciicontext;
    guchar buf[16], *ptr, *fstr;
    guint offset = 0, remain, i;
    g_print("ui_dump_bytes\n");
@@ -244,6 +248,40 @@ static void ui_dump_bytes(cbuf_t *cbuf)
    offsetbuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(offsetview));
    bytesbuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(bytesview));
    asciibuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(asciiview));
+
+   /* clear buffers */
+   gtk_text_buffer_get_start_iter(offsetbuf, &startiter);
+   gtk_text_buffer_get_end_iter(offsetbuf, &enditer);
+   gtk_text_buffer_delete(offsetbuf, &startiter, &enditer);
+
+   gtk_text_buffer_get_start_iter(bytesbuf, &startiter);
+   gtk_text_buffer_get_end_iter(bytesbuf, &enditer);
+   gtk_text_buffer_delete(bytesbuf, &startiter, &enditer);
+
+   gtk_text_buffer_get_start_iter(asciibuf, &startiter);
+   gtk_text_buffer_get_end_iter(asciibuf, &enditer);
+   gtk_text_buffer_delete(asciibuf, &startiter, &enditer);
+
+   /* set fixed font */
+   offsetcontext = gtk_widget_get_style_context(GTK_WIDGET(offsetview));
+   bytescontext = gtk_widget_get_style_context(GTK_WIDGET(bytesview));
+   asciicontext = gtk_widget_get_style_context(GTK_WIDGET(asciiview));
+
+   provider = gtk_css_provider_new();
+   gtk_css_provider_load_from_data(provider,
+         "textview {"
+         "   font: monospace;"
+         "}",
+         -1, NULL);
+
+   gtk_style_context_add_provider(offsetcontext, GTK_STYLE_PROVIDER(provider),
+         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+   gtk_style_context_add_provider(bytescontext, GTK_STYLE_PROVIDER(provider),
+         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+   gtk_style_context_add_provider(asciicontext, GTK_STYLE_PROVIDER(provider),
+         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+
 
    while (cbuf_length_remaining(cbuf, offset) > 16) {
 
@@ -313,10 +351,12 @@ static void ui_dump_bytes(cbuf_t *cbuf)
       }
       
       if (remain > 8) {
+         gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
+         gtk_text_buffer_insert(bytesbuf, &bytesiter, " ", -1);
          g_print(" ");
 
          for (i = 8; i < remain; i++) {
-            fstr = g_strdup_printf("%02x", buf[i]);
+            fstr = g_strdup_printf("%02x ", buf[i]);
             gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
             gtk_text_buffer_insert(bytesbuf, &bytesiter, fstr, -1);
             g_free(fstr);

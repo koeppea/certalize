@@ -34,6 +34,7 @@ cbuf_t* cbuf_load_file(const gchar *filename)
    gsize readlen;
    GError *error;
    cbuf_t *cbuf;
+   gchar *pemident = "-----BEGIN CERTIFICATE";
 
    g_print("cbuf_load_file('%s')\n", filename);
    cbuf = g_malloc0(sizeof(cbuf_t));
@@ -47,6 +48,19 @@ cbuf_t* cbuf_load_file(const gchar *filename)
       g_print("reading file '%s' failed: '%s'\n", filename, error->message);
       g_free(cbuf);
       return NULL;
+   }
+
+   /* try to determine if the file is direclty DER or wrapped in PEM */
+   if (strncmp(content, pemident, strlen(pemident)) == 0) {
+      g_print("PEM endcoded file\n");
+   }
+   else if (memcmp(content, "0", 1) == 0) {
+      /* this is a very vague determination of DER encoded X.509 cert */
+      g_print("DER encoded file\n");
+   }
+   else {
+      /* something else */
+      g_print("Something else\n");
    }
 
    cbuf->buffer = content;
