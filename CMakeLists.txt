@@ -29,6 +29,7 @@ include(CheckIncludeFile)
 check_include_file(stdint.h HAVE_STDINT_H)
 check_include_file(ctype.h HAVE_CTYPE_H)
 check_include_file(inttypes.h HAVE_INTTYPES_H)
+check_include_file(getopt.h HAVE_GETOPT_H)
 
 set(LIBS)
 set(INCLUDE_DIRS)

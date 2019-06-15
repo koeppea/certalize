@@ -28,7 +28,14 @@
 #include <errno.h>
 #include <glib.h>
 
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif
+
 #define _U_ __attribute__((unused))
+
+#define PROGRAM_NAME "certalize"
+#define PROGRAM_VERSION "0.1"
 
 enum {
    E_SUCCESS    = 0,
@@ -46,6 +53,8 @@ enum {
    E_FATAL      = 255,
 };
 
+
+char *global_filename;
 
 
 #endif   /* CERTALIZE_H */

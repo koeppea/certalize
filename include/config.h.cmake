@@ -8,6 +8,7 @@
 
 #cmakedefine HAVE_CTYPE_H
 #cmakedefine HAVE_INTTYPES_H
+#cmakedefine HAVE_GETOPT_H
 
 #cmakedefine INSTALL_PREFIX         "@INSTALL_PREFIX@"
 #cmakedefine INSTALL_SYSCONFDIR     "@INSTALL_SYSCONFDIR@"

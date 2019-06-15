@@ -19,8 +19,50 @@
 #include <certalize.h>
 #include <certalize_ui.h>
 
-int parse_options(int argc _U_, char *argv[] _U_)
+void print_usage(void)
 {
+   g_print("\nUsage: %s [OPTIONS] [FILE]\n", PROGRAM_NAME);
+   g_print("\nOptions:\n");
+   g_print("   -v, --version      prints the version and exits\n");
+   g_print("   -h, --help         this help screen\n");
+   g_print("\n\n");
+
+   exit(0);
+}
+
+int parse_options(int argc, char *argv[])
+{
+   int c;
+   int option_index = 0;
+
+   static struct option long_options[] = {
+      { "version", no_argument, NULL, 'v' },
+      { "help", no_argument, NULL, 'h' },
+      { "help", no_argument, NULL, '?' },
+      { 0, 0, 0, 0 }
+   };
+
+   while ((c = getopt_long(argc, argv, "vh?", long_options, &option_index)) != EOF) {
+      switch (c) {
+         case 'v':
+            g_print("%s's version is %s\n", PROGRAM_NAME, PROGRAM_VERSION);
+            exit(0);
+            break;
+         case '?':
+         case 'h':
+            print_usage();
+            exit(0);
+            break;
+         default:
+            break;
+      }
+   }
+
+   /* if argument left parse it as filename */
+   if (argv[optind]) {
+      global_filename = g_strdup(argv[optind]);
+   }
+
    return E_SUCCESS;
 }
 
@@ -28,13 +70,15 @@ int main(int argc, char *argv[])
 {
    int ret = 0;
 
-   /* parse options */
-   if ((ret = parse_options(argc, argv))) {
-      return -ret;
+   global_filename = NULL;
+
+   ret = parse_options(argc, argv);
+   if (ret != E_SUCCESS) {
+      return ret;
    }
 
    /* start UI */
-   ret = ui_start(argc, argv);
+   ret = ui_start();
 
    return ret;
 }
