@@ -18,6 +18,7 @@
 
 
 #include <certalize.h>
+#include <certalize_debug.h>
 #include <certalize_ui.h>
 #include <certalize_buf.h>
 
@@ -151,7 +152,7 @@ static void cb_activate(GApplication *app, gpointer data _U_)
  */
 static void cb_shutdown(GApplication *app _U_, gpointer data _U_)
 {
-   g_print("cb_shutdown\n");
+   DEBUG_MSG("cb_shutdown");
 }
 
 /*
@@ -159,7 +160,7 @@ static void cb_shutdown(GApplication *app _U_, gpointer data _U_)
  */
 static void ui_shutdown(GSimpleAction *action _U_, GVariant *value _U_, gpointer app)
 {
-   g_print("ui_shutdown\n");
+   DEBUG_MSG("ui_shutdown");
    g_application_quit(app);
 }
 
@@ -168,7 +169,7 @@ static void ui_shutdown(GSimpleAction *action _U_, GVariant *value _U_, gpointer
  */
 static void ui_new(GSimpleAction *action _U_, GVariant *value _U_, gpointer data _U_)
 {
-   g_print("ui_new\n");
+   DEBUG_MSG("ui_new");
 }
 
 /*
@@ -181,7 +182,7 @@ static void ui_open(GSimpleAction *action _U_, GVariant *value _U_, gpointer dat
    gint response = 0;
    cbuf_t *cbuf;
 
-   g_print("ui_open\n");
+   DEBUG_MSG("ui_open");
 
    dialog = gtk_dialog_new_with_buttons("Select a Certificate file",
          GTK_WINDOW(window),
@@ -216,7 +217,7 @@ static void ui_open(GSimpleAction *action _U_, GVariant *value _U_, gpointer dat
  */
 static void ui_prefs(GSimpleAction *action _U_, GVariant *value _U_, gpointer data _U_)
 {
-   g_print("ui_prefs\n");
+   DEBUG_MSG("ui_prefs");
 }
 
 /*
@@ -224,7 +225,7 @@ static void ui_prefs(GSimpleAction *action _U_, GVariant *value _U_, gpointer da
  */
 static void ui_analyze_certificate(cbuf_t *cbuf)
 {
-   g_print("ui_analyze_certificate\n");
+   DEBUG_MSG("ui_analyze_certificate");
 
    ui_dump_bytes(cbuf);
 }
@@ -241,7 +242,8 @@ static void ui_dump_bytes(cbuf_t *cbuf)
    GtkStyleContext *offsetcontext, *bytescontext, *asciicontext;
    guchar buf[16], *ptr, *fstr;
    guint offset = 0, remain, i;
-   g_print("ui_dump_bytes\n");
+
+   DEBUG_MSG("ui_dump_bytes");
 
    ptr = buf;
 
@@ -291,26 +293,22 @@ static void ui_dump_bytes(cbuf_t *cbuf)
       gtk_text_buffer_get_end_iter(offsetbuf, &offsetiter);
       gtk_text_buffer_insert(offsetbuf, &offsetiter, fstr, -1);
       g_free(fstr);
-      g_print("%08x  ", offset);
 
       for (i = 0; i < 8; i++) {
          fstr = g_strdup_printf("%02x ", buf[i]);
          gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
          gtk_text_buffer_insert(bytesbuf, &bytesiter, fstr, -1);
          g_free(fstr);
-         g_print("%02x ", buf[i]);
       }
       
       gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
       gtk_text_buffer_insert(bytesbuf, &bytesiter, " ", -1);
-      g_print(" ");
 
       for (i = 8; i < 16; i++) {
          fstr = g_strdup_printf("%02x ", buf[i]);
          gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
          gtk_text_buffer_insert(bytesbuf, &bytesiter, fstr, -1);
          g_free(fstr);
-         g_print("%02x ", buf[i]);
       }
 
       gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
@@ -320,15 +318,12 @@ static void ui_dump_bytes(cbuf_t *cbuf)
          fstr = g_strdup_printf("%c", g_ascii_isprint(buf[i]) ? buf[i] : '.');
          gtk_text_buffer_get_end_iter(asciibuf, &asciiiter);
          gtk_text_buffer_insert(asciibuf, &asciiiter, fstr, -1);
-         g_free(fstr);
-         g_print("%c", g_ascii_isprint(buf[i]) ? buf[i] : '.');
       }
 
       gtk_text_buffer_get_end_iter(asciibuf, &asciiiter);
       gtk_text_buffer_insert(asciibuf, &asciiiter, "\n", -1);
 
       offset += 16;
-      g_print("\n");
    }
 
    remain = cbuf_length_remaining(cbuf, offset);
@@ -340,41 +335,32 @@ static void ui_dump_bytes(cbuf_t *cbuf)
       gtk_text_buffer_get_end_iter(offsetbuf, &offsetiter);
       gtk_text_buffer_insert(offsetbuf, &offsetiter, fstr, -1);
       g_free(fstr);
-      g_print("%08x  ", offset);
 
       for (i = 0; i < (remain > 8 ? 8 : remain); i++) {
          fstr = g_strdup_printf("%02x ", buf[i]);
          gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
          gtk_text_buffer_insert(bytesbuf, &bytesiter, fstr, -1);
          g_free(fstr);
-         g_print("%02x ", buf[i]);
       }
       
       if (remain > 8) {
          gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
          gtk_text_buffer_insert(bytesbuf, &bytesiter, " ", -1);
-         g_print(" ");
 
          for (i = 8; i < remain; i++) {
             fstr = g_strdup_printf("%02x ", buf[i]);
             gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
             gtk_text_buffer_insert(bytesbuf, &bytesiter, fstr, -1);
             g_free(fstr);
-            g_print("%02x ", buf[i]);
          }
       }
 
-      for (i = 0; i < (16 - remain); i++)
-         g_print("   ");
-      
       for (i = 0; i < remain; i++) {
          fstr = g_strdup_printf("%c", g_ascii_isprint(buf[i]) ? buf[i] : '.');
          gtk_text_buffer_get_end_iter(asciibuf, &asciiiter);
          gtk_text_buffer_insert(asciibuf, &asciiiter, fstr, -1);
          g_free(fstr);
-         g_print("%c", g_ascii_isprint(buf[i]) ? buf[i] : '.');
       }
-      g_print("\n");
    }
 
 

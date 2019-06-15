@@ -19,6 +19,7 @@
 
 #include <certalize.h>
 #include <certalize_buf.h>
+#include <certalize_debug.h>
 
 /* globals    */
 
@@ -36,7 +37,7 @@ cbuf_t* cbuf_load_file(const gchar *filename)
    cbuf_t *cbuf;
    gchar *pemident = "-----BEGIN CERTIFICATE";
 
-   g_print("cbuf_load_file('%s')\n", filename);
+   DEBUG_MSG("cbuf_load_file('%s')", filename);
    cbuf = g_malloc0(sizeof(cbuf_t));
 
    if (cbuf == NULL) {
@@ -52,15 +53,15 @@ cbuf_t* cbuf_load_file(const gchar *filename)
 
    /* try to determine if the file is direclty DER or wrapped in PEM */
    if (strncmp(content, pemident, strlen(pemident)) == 0) {
-      g_print("PEM endcoded file\n");
+      DEBUG_MSG("cbuf_load_file: PEM endcoded file");
    }
    else if (memcmp(content, "0", 1) == 0) {
       /* this is a very vague determination of DER encoded X.509 cert */
-      g_print("DER encoded file\n");
+      DEBUG_MSG("cbuf_load_file: DER encoded file");
    }
    else {
       /* something else */
-      g_print("Something else\n");
+      DEBUG_MSG("cbuf_load_file: Something else");
    }
 
    cbuf->buffer = content;
@@ -78,7 +79,7 @@ guint16 cbuf_get_ntohs(cbuf_t *cbuf, guint offset)
    guint16 result;
 
    if (offset + 2 > cbuf->length) {
-      g_print("cbuf_get_ntohs: not enough buffer available\n");
+      DEBUG_MSG("cbuf_get_ntohs: not enough buffer available");
       return 0;
    }
 
@@ -96,7 +97,7 @@ guint32 cbuf_get_ntohl(cbuf_t *cbuf, guint offset)
    guint32 result;
 
    if (offset + 4 > cbuf->length) {
-      g_print("cbuf_get_ntohl: not enough buffer available\n");
+      DEBUG_MSG("cbuf_get_ntohl: not enough buffer available");
       return 0;
    }
 
@@ -116,7 +117,7 @@ gchar* cbuf_get_bytes(cbuf_t *cbuf, guchar **buffer, guint offset, gsize length)
 {
 
    if(offset + length > cbuf->length) {
-      g_print("cbuf_get_bytes: not enough buffer available\n");
+      DEBUG_MSG("cbuf_get_bytes: not enough buffer available");
       return NULL;
    }
 
