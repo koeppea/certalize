@@ -19,6 +19,7 @@
 
 #include <certalize.h>
 #include <certalize_buf.h>
+#include <certalize_base64.h>
 #include <certalize_debug.h>
 
 /* globals    */
@@ -53,7 +54,26 @@ cbuf_t* cbuf_load_file(const gchar *filename)
 
    /* try to determine if the file is direclty DER or wrapped in PEM */
    if (strncmp(content, pemident, strlen(pemident)) == 0) {
+      gsize len = 0;
+      gint dlen = 0;
+      gchar *base64, *der;
       DEBUG_MSG("cbuf_load_file: PEM endcoded file");
+
+      base64 = g_malloc0(readlen);
+      len = pem_strip(content, readlen, base64);
+      der = g_malloc0((len/4)*3);
+      dlen = base64_decode(base64, len, der);
+      g_print("decoded: (%d)\n", dlen);
+
+      g_free(base64);
+      g_free(content);
+
+      if (dlen == -1)
+         return NULL;
+
+      content = der;
+      readlen = dlen;
+      
    }
    else if (memcmp(content, "0", 1) == 0) {
       /* this is a very vague determination of DER encoded X.509 cert */

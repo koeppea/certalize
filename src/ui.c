@@ -205,7 +205,14 @@ static void ui_open(GSimpleAction *action _U_, GVariant *value _U_, gpointer dat
       gtk_widget_destroy(dialog);
       cbuf = cbuf_load_file(filename);
       g_free(filename);
-      ui_analyze_certificate(cbuf);
+
+      /* TODO Infobar for error message */
+      if (cbuf == NULL) {
+         DEBUG_MSG("ui_open: error parsing file");
+      }
+      else {
+         ui_analyze_certificate(cbuf);
+      }
    }
    else {
       gtk_widget_destroy(dialog);
