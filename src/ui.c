@@ -40,6 +40,7 @@ static void ui_prefs(GSimpleAction *action, GVariant *value, gpointer data);
 
 static void ui_analyze_certificate(cbuf_t *cbuf);
 static void ui_dump_bytes(cbuf_t *cbuf);
+static void ui_dissect_signed_certficate(GtkTreeStore *store, cbuf_t *cbuf);
 
 
 /*************/
@@ -232,9 +233,37 @@ static void ui_prefs(GSimpleAction *action _U_, GVariant *value _U_, gpointer da
  */
 static void ui_analyze_certificate(cbuf_t *cbuf)
 {
+   GtkTreeView *tree;
+   GtkTreeStore *store;
+   GtkTreeIter iter;
+   GtkTreeViewColumn *column;
+   GtkCellRenderer *renderer;
+   guint offset;
+
    DEBUG_MSG("ui_analyze_certificate");
 
    ui_dump_bytes(cbuf);
+
+   offset = 0;
+   tree = GTK_TREE_VIEW(detailsview);
+
+
+   renderer = gtk_cell_renderer_text_new();
+   column = gtk_tree_view_column_new();
+   gtk_tree_view_column_add_attribute(column, renderer, "text", 0);
+   gtk_tree_view_append_column(tree, column);
+   gtk_tree_view_set_headers_visible(tree, FALSE);
+
+   store = gtk_tree_store_new(1, G_TYPE_OBJECT);
+   ui_dissect_signed_certificate(store, cbuf);
+
+   gtk_tree_view_set_model(tree, GTK_TREE_MODEL(store));
+
+   g_object_unref(store);
+
+
+   gtk_widget_show_all(tree);
+
 }
 
 /*
@@ -372,6 +401,14 @@ static void ui_dump_bytes(cbuf_t *cbuf)
 
 
 }
+
+void ui_dissect_signed_certificate(GtkTreeStore *store, cbuf_t *cbuf)
+{
+   GtkTreeIter iter, child;
+
+
+}
+
 /* EOF */
 
 // vim:ts=3:expandtab

@@ -4,6 +4,7 @@ set(SOURCE_FILES
   buf.c
   debug.c
   base64.c
+  asn1.c
 )
 
 add_executable(certalize ${SOURCE_FILES})
