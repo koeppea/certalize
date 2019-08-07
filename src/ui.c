@@ -21,17 +21,23 @@
 #include <certalize_debug.h>
 #include <certalize_ui.h>
 #include <certalize_buf.h>
+#include <certalize_asn1.h>
 
 /* globals    */
 GObject *window = NULL;
 GObject *detailsview = NULL;
-GObject *offsetview = NULL;
-GObject *bytesview = NULL;
-GObject *asciiview = NULL;
+GObject *offsetgrid = NULL;
+GObject *bytesgrid = NULL;
+GObject *asciigrid = NULL;
 
 /* prototypes */
 static void cb_activate(GApplication *app, gpointer data);
 static void cb_shutdown(GApplication *app, gpointer data);
+static gboolean cb_tree_view_buttonpressed(GtkWidget *widget, 
+      GdkEvent *event, gpointer data);
+static gboolean cb_tree_selected(GtkTreeSelection *selection, 
+      GtkTreeModel *model, GtkTreePath *path, gboolean selected, 
+      gpointer data);
 
 static void ui_shutdown(GSimpleAction *action, GVariant *value, gpointer data);
 static void ui_new(GSimpleAction *action, GVariant *value, gpointer data);
@@ -40,7 +46,8 @@ static void ui_prefs(GSimpleAction *action, GVariant *value, gpointer data);
 
 static void ui_analyze_certificate(cbuf_t *cbuf);
 static void ui_dump_bytes(cbuf_t *cbuf);
-static void ui_dissect_signed_certficate(GtkTreeStore *store, cbuf_t *cbuf);
+static void ui_byteselect(bytepointer_t *bp);
+static void ui_dissect_signed_certificate(GtkTreeStore *store, cbuf_t *cbuf);
 
 
 /*************/
@@ -73,9 +80,13 @@ static void cb_activate(GApplication *app, gpointer data _U_)
 {
    GObject *menu;
    GError *err = NULL;
+   GFile *file;
    GtkBuilder *widgets, *menus;
+   GtkTreeSelection *selection;
+   GtkCssProvider *provider;
    gchar *widgets_filename = INSTALL_UIDIR "/widgets.ui";
    gchar *menus_filename = INSTALL_UIDIR "/menus.ui";
+   gchar *style_filename = INSTALL_UIDIR "/style.css";
    guint i;
    cbuf_t *cbuf = NULL;
 
@@ -106,10 +117,14 @@ static void cb_activate(GApplication *app, gpointer data _U_)
 
    /* get main widgets to be used later */
    detailsview = gtk_builder_get_object(widgets, "details-view");
-   offsetview = gtk_builder_get_object(widgets, "offset-view");
-   bytesview = gtk_builder_get_object(widgets, "bytes-view");
-   asciiview = gtk_builder_get_object(widgets, "ascii-view");
+   offsetgrid = gtk_builder_get_object(widgets, "offset-grid");
+   bytesgrid = gtk_builder_get_object(widgets, "bytes-grid");
+   asciigrid = gtk_builder_get_object(widgets, "ascii-grid");
 
+   /* set selection function to select bytes */
+   selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(detailsview));
+   gtk_tree_selection_set_select_function(selection, cb_tree_selected, 
+         NULL, NULL);
 
    /* define accelerators */
    static ui_accel_map_t accels[] = {
@@ -134,16 +149,36 @@ static void cb_activate(GApplication *app, gpointer data _U_)
    for (i = 0; i < G_N_ELEMENTS(accels); i++)
       gtk_application_set_accels_for_action(GTK_APPLICATION(app),
             accels[i].action, accels[i].accel);
+
+   /* load custom style */
+   provider = gtk_css_provider_new();
+   file = g_file_new_for_path(style_filename);
+   if (gtk_css_provider_load_from_file(provider, file, &err)) {
+      gtk_style_context_add_provider_for_screen(
+            gdk_screen_get_default(), GTK_STYLE_PROVIDER(provider),
+            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+   }
+   else {
+      g_warning("Could not load CSS file: %s", err->message);
+      g_error_free(err);
+   }
    
    /* show all widgets */
    gtk_widget_show_all(GTK_WIDGET(window));
 
    g_object_unref(widgets);
    g_object_unref(menus);
+   g_object_unref(file);
 
    if (global_filename) {
-      cbuf_load_file(global_filename);
-      ui_analyze_certificate(cbuf);
+      cbuf = cbuf_load_file(global_filename);
+      /* TODO Infobar for error message */
+      if (cbuf == NULL) {
+         DEBUG_MSG("cb_activate: error parsing file");
+      }
+      else {
+         ui_analyze_certificate(cbuf);
+      }
    }
 }
 
@@ -155,6 +190,49 @@ static void cb_shutdown(GApplication *app _U_, gpointer data _U_)
 {
    DEBUG_MSG("cb_shutdown");
 }
+
+/*
+ * callback when tree view is clicked
+ *   - (future: context menu)
+ */
+static gboolean cb_tree_view_buttonpressed(GtkWidget *widget, GdkEvent *event,
+      gpointer data _U_)
+{
+   /*
+   GdkEventButton *button_event;
+
+   if (event->type == GDK_BUTTON_PRESS) {
+      button_event = (GdkEventButton*)event;
+      if (0 && button_event->button == 1)
+         ui_byteselect(GTK_TREE_VIEW(widget));
+   }
+   */
+
+   return FALSE;
+}
+   
+/*
+ * callback when tree view is selcted 
+ *   - used to select bytes in byteview
+ */
+static gboolean cb_tree_selected(GtkTreeSelection *selection _U_, 
+      GtkTreeModel *model, GtkTreePath *path, gboolean selected _U_, 
+      gpointer data _U_)
+{
+   GtkTreeIter iter;
+   bytepointer_t *bp;
+   gchar *title;
+
+   if (gtk_tree_model_get_iter(model, &iter, path)) {
+      gtk_tree_model_get(model, &iter, 0, &title, 1, &bp, -1);
+      g_print("'%s' selected\n", title);
+      g_free(title);
+      ui_byteselect(bp);
+   }
+
+   return TRUE;
+}
+
 
 /*
  * request to shutdown application
@@ -250,19 +328,22 @@ static void ui_analyze_certificate(cbuf_t *cbuf)
 
    renderer = gtk_cell_renderer_text_new();
    column = gtk_tree_view_column_new();
+   gtk_tree_view_column_pack_start(column, renderer, FALSE);
    gtk_tree_view_column_add_attribute(column, renderer, "text", 0);
    gtk_tree_view_append_column(tree, column);
    gtk_tree_view_set_headers_visible(tree, FALSE);
 
-   store = gtk_tree_store_new(1, G_TYPE_OBJECT);
+   store = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
    ui_dissect_signed_certificate(store, cbuf);
 
    gtk_tree_view_set_model(tree, GTK_TREE_MODEL(store));
 
    g_object_unref(store);
 
+   g_signal_connect(tree, "button-press-event", 
+         G_CALLBACK(cb_tree_view_buttonpressed), NULL);
 
-   gtk_widget_show_all(tree);
+   gtk_widget_show_all(GTK_WIDGET(tree));
 
 }
 
@@ -271,141 +352,220 @@ static void ui_analyze_certificate(cbuf_t *cbuf)
  */
 static void ui_dump_bytes(cbuf_t *cbuf)
 {
-   GtkTextBuffer *offsetbuf, *bytesbuf, *asciibuf;
-   GtkTextIter offsetiter, bytesiter, asciiiter;
+   GtkTextBuffer *offsetbuf, *asciibuf;
+   GtkTextIter offsetiter, asciiiter;
    GtkTextIter startiter, enditer;
-   GtkCssProvider *provider;
-   GtkStyleContext *offsetcontext, *bytescontext, *asciicontext;
+   GtkGrid *grid;
+   GtkWidget *label;
    guchar buf[16], *ptr, *fstr;
-   guint offset = 0, remain, i;
+   guint offset = 0, remain, i, row = 0;
 
    DEBUG_MSG("ui_dump_bytes");
 
    ptr = buf;
 
-   offsetbuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(offsetview));
-   bytesbuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(bytesview));
-   asciibuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(asciiview));
+   /* clear offset grid */
+   gtk_grid_remove_column(GTK_GRID(offsetgrid), 0);
 
-   /* clear buffers */
-   gtk_text_buffer_get_start_iter(offsetbuf, &startiter);
-   gtk_text_buffer_get_end_iter(offsetbuf, &enditer);
-   gtk_text_buffer_delete(offsetbuf, &startiter, &enditer);
+   /* clear bytes grid */
+   for (i = 0; i < 17; i++)
+      gtk_grid_remove_column(GTK_GRID(bytesgrid), i);
 
-   gtk_text_buffer_get_start_iter(bytesbuf, &startiter);
-   gtk_text_buffer_get_end_iter(bytesbuf, &enditer);
-   gtk_text_buffer_delete(bytesbuf, &startiter, &enditer);
+   /* clear ascii grid */
+   for (i = 0; i < 8; i++)
+      gtk_grid_remove_column(GTK_GRID(asciigrid), i);
 
-   gtk_text_buffer_get_start_iter(asciibuf, &startiter);
-   gtk_text_buffer_get_end_iter(asciibuf, &enditer);
-   gtk_text_buffer_delete(asciibuf, &startiter, &enditer);
-
-   /* set fixed font */
-   offsetcontext = gtk_widget_get_style_context(GTK_WIDGET(offsetview));
-   bytescontext = gtk_widget_get_style_context(GTK_WIDGET(bytesview));
-   asciicontext = gtk_widget_get_style_context(GTK_WIDGET(asciiview));
-
-   provider = gtk_css_provider_new();
-   gtk_css_provider_load_from_data(provider,
-         "textview {"
-         "   font: monospace;"
-         "}",
-         -1, NULL);
-
-   gtk_style_context_add_provider(offsetcontext, GTK_STYLE_PROVIDER(provider),
-         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-   gtk_style_context_add_provider(bytescontext, GTK_STYLE_PROVIDER(provider),
-         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-   gtk_style_context_add_provider(asciicontext, GTK_STYLE_PROVIDER(provider),
-         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-
-
-
+   /* dump 16 bytes each line */
    while (cbuf_length_remaining(cbuf, offset) > 16) {
 
       cbuf_get_bytes(cbuf, &ptr, offset, 16);
 
-      fstr = g_strdup_printf("%08x\n", offset);
-      gtk_text_buffer_get_end_iter(offsetbuf, &offsetiter);
-      gtk_text_buffer_insert(offsetbuf, &offsetiter, fstr, -1);
+      /* offset */
+      fstr = g_strdup_printf("%08x", offset);
+      label = gtk_label_new(fstr);
+      gtk_grid_attach(GTK_GRID(offsetgrid), label, 0, row, 1, 1);
       g_free(fstr);
 
+      /* bytes */
       for (i = 0; i < 8; i++) {
-         fstr = g_strdup_printf("%02x ", buf[i]);
-         gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
-         gtk_text_buffer_insert(bytesbuf, &bytesiter, fstr, -1);
+         fstr = g_strdup_printf("%02x", buf[i]);
+         label = gtk_label_new(fstr);
+         gtk_grid_attach(GTK_GRID(bytesgrid), label, i, row, 1, 1);
          g_free(fstr);
       }
       
-      gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
-      gtk_text_buffer_insert(bytesbuf, &bytesiter, " ", -1);
+      label = gtk_label_new(" ");
+      gtk_grid_attach(GTK_GRID(bytesgrid), label, 8, row, 1, 1);
 
       for (i = 8; i < 16; i++) {
-         fstr = g_strdup_printf("%02x ", buf[i]);
-         gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
-         gtk_text_buffer_insert(bytesbuf, &bytesiter, fstr, -1);
+         fstr = g_strdup_printf("%02x", buf[i]);
+         label = gtk_label_new(fstr);
+         gtk_grid_attach(GTK_GRID(bytesgrid), label, i+1, row, 1, 1);
          g_free(fstr);
       }
 
-      gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
-      gtk_text_buffer_insert(bytesbuf, &bytesiter, "\n", -1);
-
+      /* ascii */
       for (i = 0; i < 16; i++) {
          fstr = g_strdup_printf("%c", g_ascii_isprint(buf[i]) ? buf[i] : '.');
-         gtk_text_buffer_get_end_iter(asciibuf, &asciiiter);
-         gtk_text_buffer_insert(asciibuf, &asciiiter, fstr, -1);
+         label = gtk_label_new(fstr);
+         gtk_grid_attach(GTK_GRID(asciigrid), label, i, row, 1, 1);
+         g_free(fstr);
       }
 
-      gtk_text_buffer_get_end_iter(asciibuf, &asciiiter);
-      gtk_text_buffer_insert(asciibuf, &asciiiter, "\n", -1);
-
+      row++;
       offset += 16;
    }
 
    remain = cbuf_length_remaining(cbuf, offset);
 
+   /* last line */
    if (remain > 0) {
       cbuf_get_bytes(cbuf, &ptr, offset, remain);
 
+      /* offset */
       fstr = g_strdup_printf("%08x\n", offset);
-      gtk_text_buffer_get_end_iter(offsetbuf, &offsetiter);
-      gtk_text_buffer_insert(offsetbuf, &offsetiter, fstr, -1);
+      label = gtk_label_new(fstr);
+      gtk_grid_attach(GTK_GRID(offsetgrid), label, 0, row, 1, 1);
       g_free(fstr);
 
+      /* bytes */
       for (i = 0; i < (remain > 8 ? 8 : remain); i++) {
-         fstr = g_strdup_printf("%02x ", buf[i]);
-         gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
-         gtk_text_buffer_insert(bytesbuf, &bytesiter, fstr, -1);
+         fstr = g_strdup_printf("%02x", buf[i]);
+         label = gtk_label_new(fstr);
+         gtk_grid_attach(GTK_GRID(bytesgrid), label, i, row, 1, 1);
          g_free(fstr);
       }
       
       if (remain > 8) {
-         gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
-         gtk_text_buffer_insert(bytesbuf, &bytesiter, " ", -1);
+         label = gtk_label_new(" ");
+         gtk_grid_attach(GTK_GRID(bytesgrid), label, 8, row, 1, 1);
 
          for (i = 8; i < remain; i++) {
-            fstr = g_strdup_printf("%02x ", buf[i]);
-            gtk_text_buffer_get_end_iter(bytesbuf, &bytesiter);
-            gtk_text_buffer_insert(bytesbuf, &bytesiter, fstr, -1);
+            fstr = g_strdup_printf("%02x", buf[i]);
+            label = gtk_label_new(fstr);
+            gtk_grid_attach(GTK_GRID(bytesgrid), label, i+1, row, 1, 1);
             g_free(fstr);
          }
       }
 
+      /* ascii */
       for (i = 0; i < remain; i++) {
          fstr = g_strdup_printf("%c", g_ascii_isprint(buf[i]) ? buf[i] : '.');
-         gtk_text_buffer_get_end_iter(asciibuf, &asciiiter);
-         gtk_text_buffer_insert(asciibuf, &asciiiter, fstr, -1);
+         label = gtk_label_new(fstr);
+         gtk_grid_attach(GTK_GRID(asciigrid), label, i, row, 1, 1);
          g_free(fstr);
       }
    }
 
+   gtk_widget_show_all(GTK_WIDGET(offsetgrid));
+   gtk_widget_show_all(GTK_WIDGET(bytesgrid));
+   gtk_widget_show_all(GTK_WIDGET(asciigrid));
+
+}
+
+static void ui_byteselect(bytepointer_t *bp)
+{
+   GtkTextBuffer *bytesbuf, *asciibuf, *offsetbuf;
+   GtkTextIter startiter, enditer;
+   GtkGrid *grid;
+   GtkWidget *label;
+   guint startoffset, endoffset;
+   guint whitespaces, top, left;
+   gridcoord_t startcoords, endcoords;
+
+   DEBUG_MSG("ui_byteselect");
+
+   grid = GTK_GRID(bytesgrid);
+
+   bp->offset = 3;
+   bp->length = 32;
+
+   /* 
+    * calculate the number of characters for the start of the selection 
+    * in the bytesview
+    */
+   g_print("bytes_view:\n");
+   whitespaces = bp->offset % 16 > 8 ? 1 : 0;
+   startcoords.top = bp->offset / 16;
+   startcoords.left = bp->offset % 16 + whitespaces;
+
+   g_print("\tstart: top: %d, left: %d (whitespace: %d)\n", 
+         startcoords.top, startcoords.left, whitespaces);
+
+   whitespaces = (bp->offset + bp->length) % 16 > 8 ? 1 : 0;
+   endcoords.top = (bp->offset + bp->length) / 16;
+   endcoords.left = (bp->offset + bp->length) % 16 - 1 + whitespaces;
+
+   g_print("\tend: top: %d, left: %d (whitespace: %d)\n", 
+         endcoords.top, endcoords.left, whitespaces);
+
+   label = gtk_grid_get_child_at(grid, startcoords.left, startcoords.top);
+   g_print("Label at %d/%d has name %s\n",
+         startcoords.top, startcoords.left, gtk_widget_get_name(label));
+
+   gtk_widget_set_name(label, "selected");
+   
+   label = gtk_grid_get_child_at(grid, endcoords.left, endcoords.top);
+   gtk_widget_set_name(label, "selected");
+
+
+
+   /* 
+    * calculate the number of characters for the start of the selection 
+    * in the asciigrid
+    */
+   g_print("ascii_view:\n");
+   whitespaces = bp->offset > 0 ? (bp->offset - 1) / 16 : 0;
+   startoffset = bp->offset + whitespaces;
+   g_print("\tstartoffset: %d (whitespaces: %d)\n", startoffset, whitespaces);
+
+   whitespaces = bp->length > 0 ? (bp->length - 1) / 16 : 0;
+   if (bp->offset % 16) // if offset begins withing a line ...
+      whitespaces++; // add one whitespace
+   endoffset = startoffset + bp->length + whitespaces;
+   g_print("\tendoffset: %d (whitespaces: %d)\n", endoffset, whitespaces);
+
+   // FIXME: scoll may to be done on the scrollable
 
 }
 
 void ui_dissect_signed_certificate(GtkTreeStore *store, cbuf_t *cbuf)
 {
    GtkTreeIter iter, child;
+   int res;
+   asn1_hdr_t *asn1;
+   bytepointer_t *bptr;
 
+   DEBUG_MSG("ui_dissect_signed_certificate\n");
+
+   asn1 = g_malloc0(sizeof(asn1_hdr_t));
+
+   if ((res = asn1_parse_hdr(cbuf, asn1)) < 0) {
+      DEBUG_MSG("Error in parsing ASN1 header\n");
+      return;
+   }
+
+   if (!asn1->constructed && asn1->tag != ASN1_TAG_SEQUENCE) {
+      DEBUG_MSG("X.509 certificate must start with a Sequence\n");
+      return;
+   }
+
+   /* set bytepointer for byte selection */
+   bptr = g_malloc0(sizeof(bytepointer_t));
+   bptr->offset = cbuf->offset;
+   bptr->length = asn1->length + res;
+
+   /* create top-level */
+   gtk_tree_store_append(store, &iter, NULL);
+   gtk_tree_store_set(store, &iter, 
+         0, "X.509 signed certificate", 1, bptr, -1);
+
+   /* forward offset to already parsed bytes */
+   cbuf->offset += res;
+
+   /* prepare sublevels and start parsing */
+
+   g_free(asn1);
 
 }
 

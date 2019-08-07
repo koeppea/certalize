@@ -1,0 +1,9 @@
+box#bytes {
+   background-color: white;
+   font-family: Monospace;
+}
+
+label#selected {
+   background-color: red;
+   color: white;
+}

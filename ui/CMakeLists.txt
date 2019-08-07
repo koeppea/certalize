@@ -1,6 +1,7 @@
 set(UI_FILES
   widgets.ui
   menus.ui
+  style.css
 )
 
 foreach(f IN LISTS UI_FILES)

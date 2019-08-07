@@ -30,6 +30,16 @@ typedef struct gtk_accel_map {
    const char * const accel[2];
 } ui_accel_map_t;
 
+typedef struct bytepointer {
+   guint32 offset;
+   guint32 length;
+} bytepointer_t;
+
+typedef struct gridcoordinates {
+   guint top;
+   guint left;
+} gridcoord_t;
+
 /* prototypes */
 extern int ui_start(void);
 

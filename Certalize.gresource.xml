@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+ <gresource prefix="/org/gnome/Certalize">
+  <file preprocess="xml-stripblanks">ui/widgets.ui</file>
+  <file preprocess="xml-stripblanks">ui/menus.ui</file>
+  <file>ui/style.css</file>
+ </gresource>
+</gresources>
