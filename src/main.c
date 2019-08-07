@@ -23,6 +23,7 @@ void print_usage(void)
 {
    g_print("\nUsage: %s [OPTIONS] [FILE]\n", PROGRAM_NAME);
    g_print("\nOptions:\n");
+   g_print("   -f, --file         reads and parses specified file\n");
    g_print("   -v, --version      prints the version and exits\n");
    g_print("   -h, --help         this help screen\n");
    g_print("\n\n");
@@ -36,14 +37,18 @@ int parse_options(int argc, char *argv[])
    int option_index = 0;
 
    static struct option long_options[] = {
+      { "file", required_argument, NULL, 'f' },
       { "version", no_argument, NULL, 'v' },
       { "help", no_argument, NULL, 'h' },
       { "help", no_argument, NULL, '?' },
       { 0, 0, 0, 0 }
    };
 
-   while ((c = getopt_long(argc, argv, "vh?", long_options, &option_index)) != EOF) {
+   while ((c = getopt_long(argc, argv, "f:vh?", long_options, &option_index)) != EOF) {
       switch (c) {
+         case 'f':
+            global_filename = optarg;
+            break;
          case 'v':
             g_print("%s's version is %s\n", PROGRAM_NAME, PROGRAM_VERSION);
             exit(0);
@@ -60,7 +65,7 @@ int parse_options(int argc, char *argv[])
 
    /* if argument left parse it as filename */
    if (argv[optind]) {
-      global_filename = g_strdup(argv[optind]);
+      global_filename = argv[optind];
    }
 
    return E_SUCCESS;
